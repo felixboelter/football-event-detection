@@ -2,11 +2,11 @@ import torch
 import shutil
 import os
 import numpy as np
-from src.SlowFast.config import Config
+from config import SlowFast_Config
 
 
 class ModelCheckpoint:
-    def __init__(self, weight_dir='./weights', config=Config):
+    def __init__(self, weight_dir='./weights', config=SlowFast_Config):
         self.weight_dir = weight_dir
         self.config = config
         file_prefix = ''

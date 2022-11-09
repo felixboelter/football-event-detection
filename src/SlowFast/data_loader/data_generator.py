@@ -13,7 +13,7 @@ import pytorchvideo
 
 from pytorchvideo.data.ava import AvaLabeledVideoFramePaths
 
-from src.SlowFast.utils.data_utils import *
+from slowfast.utils.data_utils import *
 
 
 # Dataset (Input Pipeline)

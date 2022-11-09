@@ -1,11 +1,11 @@
-from src.yolox.exp import get_exp
-from src.yolox.ball_interpolation import bt_smooth_tracking, get_cropped_frames
-from src.yolox.inference import Predictor
-from src.yolox.utils import get_model_info
+from ball_yolox.exp import get_exp
+from ball_yolox.ball_interpolation import bt_smooth_tracking, get_cropped_frames
+from ball_yolox.inference import Predictor
+from ball_yolox.utils import get_model_info
 from config import YOLOX_Config, SlowFast_Config
 from itertools import accumulate
 from loguru import logger
-import torch, glob, os, cv2, time, shutil, numpy as np, pandas as pd
+import torch, glob, os, cv2, time, sys, shutil, numpy as np, pandas as pd
 from tqdm import tqdm
 from importlib import import_module
 import shutil
@@ -13,9 +13,9 @@ from glob import glob
 import pytorchvideo
 from pytorchvideo.data.ava import AvaLabeledVideoFramePaths
 import torch.nn as nn
-from src.SlowFast.data_loader.data_generator import DataLoader
-from src.SlowFast.utils.training_utils import ModelCheckpoint
-from src.SlowFast.utils.data_utils import *
+from slowfast.data_loader.data_generator import DataLoader
+from slowfast.utils.training_utils import ModelCheckpoint
+from slowfast.utils.data_utils import *
 
 class SubmissionGenerator:
     def __init__(self, config, video_paths):
@@ -215,6 +215,8 @@ def run_ball_track(exp, config : YOLOX_Config, resized_path : str):
 if __name__ == '__main__':
     YOLOX_config = YOLOX_Config()
     SlowFast_config = SlowFast_Config()
+    try: os.mkdir('./tracking_outputs')
+    except: pass
     for vid in glob.glob('./data/clips/*'):
         exp = get_exp(YOLOX_config.exp_file, None)
         run_ball_track(exp, YOLOX_config, vid)
