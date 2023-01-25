@@ -6,9 +6,9 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, Optional, Union
 
-from src.pytorchvideo.data.encoded_video import EncodedVideo
-from src.pytorchvideo.data.frame_video import FrameVideo
-from src.pytorchvideo.data.utils import (
+from pytorchvideo.data.encoded_video import EncodedVideo
+from pytorchvideo.data.frame_video import FrameVideo
+from pytorchvideo.data.utils import (
     DataclassFieldCaster,
     load_dataclass_dict_from_csv,
     save_dataclass_objs_to_headered_csv,
