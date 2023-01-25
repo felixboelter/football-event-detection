@@ -10,7 +10,7 @@ import os
 import torchvision
 import pytorchvideo.transforms.functional as tranfs
 import pytorchvideo
-
+from pytorchvideo.data.encoded_video import EncodedVideo
 from pytorchvideo.data.ava import AvaLabeledVideoFramePaths
 
 from slowfast.utils.data_utils import *
@@ -36,7 +36,7 @@ class CustomDataset(data_utils.Dataset):
         self.testing = False if self.video_path is None else True
 
         if self.testing:
-            self.test_encoded_vid = pytorchvideo.data.encoded_video.EncodedVideo.from_path(video_path)
+            self.test_encoded_vid = EncodedVideo.from_path(video_path)
             self.duration = float(self.test_encoded_vid.duration)
             self.pred_range = np.arange(0, self.duration - (self.cfg.window_len * 0.04),
                                         self.cfg.pred_jump * 0.04)

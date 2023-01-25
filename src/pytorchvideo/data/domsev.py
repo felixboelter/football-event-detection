@@ -19,8 +19,8 @@ from pytorchvideo.data.dataset_manifest_utils import (
     VideoDataset,
     VideoDatasetType,
 )
-from src.pytorchvideo.data.utils import DataclassFieldCaster, load_dataclass_dict_from_csv
-from src.pytorchvideo.data.video import Video
+from pytorchvideo.data.utils import DataclassFieldCaster, load_dataclass_dict_from_csv
+from pytorchvideo.data.video import Video
 
 
 try:
