@@ -6,7 +6,7 @@ class YOLOX_Config:
         self.exp_file = './models/yolox_exp.py'
         self.nms = 0.5
         self.conf = 0.6
-        self.device = "cpu"
+        self.device = "gpu"
         
         # ball tracking
         self.outlier_thresh = 20

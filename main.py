@@ -9,7 +9,6 @@ import torch, glob, os, cv2, time, sys, shutil, numpy as np, pandas as pd
 from tqdm import tqdm
 from importlib import import_module
 import shutil
-from glob import glob
 import pytorchvideo
 from pytorchvideo.data.ava import AvaLabeledVideoFramePaths
 import torch.nn as nn
@@ -31,7 +30,7 @@ class SubmissionGenerator:
         self.model = create_model(self.config)
         # print(self.model)
         self.config.fold = None
-        model_checkpoint = ModelCheckpoint(config=self.config, weight_dir='../')
+        model_checkpoint = ModelCheckpoint(config=self.config, weight_dir='./models')
         self.model, _, _, _ = model_checkpoint.load(self.model, load_best=True)
 
         print(f' Loading data '.center(self.terminal_width, '*'))
@@ -54,7 +53,6 @@ class SubmissionGenerator:
             preds = np.zeros((int(test_loader.dataset.duration * 25), 4))
             sta = (self.config.window_len - self.config.prediction_len) // 2
             norm_factor = self.config.prediction_len // self.config.pred_jump
-
             for i, [x, idx] in enumerate(tqdm(test_loader)):
                 x = [inp.to(self.config.device) for inp in x]
                 idx = idx.data.numpy()
@@ -210,17 +208,107 @@ def run_ball_track(exp, config : YOLOX_Config, resized_path : str):
     )
     get_ball(predictor, config, resized_path)
 
+def find_labels(preds, vid):
+    last_lab = None
+    same_preds_probs = []
+    same_preds_start_idx = 0
+    vid_labs = []
+    for idx, pr in enumerate(preds[38:-40].argmax(1)): 
+        if last_lab is None:
+            if pr != 3:
+                last_lab = pr
+                same_preds_probs.append(preds[idx + 38, pr])
+                same_preds_start_idx = idx + 38
+        else:
+            if (pr == last_lab):
+                same_preds_probs.append(preds[idx + 38, pr])
+            else:
+                if len(same_preds_probs) > 1:
+                    pred_pos = np.average(np.arange(len(same_preds_probs)), weights=same_preds_probs)
+                    # prob = preds[int(np.floor(pred_pos)) + same_preds_start_idx, last_lab]
+                    prob = max(same_preds_probs)
+                    # if prob > 0.5:
+                    pred_pos = (same_preds_start_idx + pred_pos) * 0.04
+                    vid_labs.append([vid, pred_pos, config.labels[last_lab], prob])
+                    same_preds_probs = []
+                    same_preds_start_idx = 0
 
+                    if pr != 3:
+                        last_lab = pr
+                        same_preds_probs.append(preds[idx + 38, pr])
+                        same_preds_start_idx = idx + 38
+                    else:
+                        last_lab = None
+                else:
+                    if pr != 3:
+                        last_lab = pr
+                        same_preds_probs.append(preds[idx + 38, pr])
+                        same_preds_start_idx = idx + 38
+                    else:
+                        last_lab = None
+                    
+    return vid_labs
+
+def visualise_videos(video_path, sub_data, start_time = 0):
+    print(video_path)
+    cap = cv2.VideoCapture(video_path)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    save_path = os.path.join(f'./event_outputs/{video_path[video_path.rfind("/")+1:-4]}_event.mp4')
+    print(f"Saving to {save_path}")
+    vid_writer = cv2.VideoWriter(
+        save_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (1280, 720)
+    )
+    sub_data_times = [int(data[1]/0.04) for data in sub_data]
+    frame_num = 0
+    text = None
+    frame_count = 0
+    while True:
+        ret_val, frame = cap.read()
+        frame_num += 1
+        if ret_val:
+            timestamp = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000
+            if timestamp >= start_time:
+                frame = cv2.resize(frame, (1280, 720))
+                if frame_num in sub_data_times:
+                  text = f"{sub_data[sub_data_times.index(frame_num)][2]} Confidence: {round(sub_data[sub_data_times.index(frame_num)][3],2)*100} %"
+                  frame = cv2.putText(frame, text, (10,60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+                  frame_count = frame_num + 48
+                elif frame_num <= frame_count: frame = cv2.putText(frame, text, (10,60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+                vid_writer.write(frame)
+            
+        else:
+            if frame_num in sub_data_times:
+              text = f"{sub_data[sub_data_times.index(frame_num)][2]} Confidence: {round(sub_data[sub_data_times.index(frame_num)][3],2)*100} %"
+              frame = cv2.putText(frame, text, (10,60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv2.LINE_AA)
+              frame_count = frame_num + 48
+            elif frame_num <= frame_count: frame = cv2.putText(frame, text, (10,60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+            vid_writer.write(frame)
+            break
+                
+    cap.release()
+    vid_writer.release()
 
 if __name__ == '__main__':
     YOLOX_config = YOLOX_Config()
     SlowFast_config = SlowFast_Config()
-    try: os.mkdir('./tracking_outputs')
+    try: 
+        os.mkdir(os.path.join(os.getcwd(), 'tracking_outputs'))
+        for vid in glob.glob(os.path.join(os.getcwd(), 'data', 'clips', '*.mp4')):
+            exp = get_exp(YOLOX_config.exp_file, None)
+            run_ball_track(exp, YOLOX_config, vid)
     except: pass
-    for vid in glob.glob('./data/clips/*'):
-        exp = get_exp(YOLOX_config.exp_file, None)
-        run_ball_track(exp, YOLOX_config, vid)
-    torch.cuda.empty_cache()
-    vid_paths = glob.glob('./tracking_outputs/*')
+    if YOLOX_config.device == 'gpu': torch.cuda.empty_cache()
+    vid_paths = glob.glob(os.path.join(os.getcwd(), 'tracking_outputs', '*.mp4'))
     predictor = SubmissionGenerator(SlowFast_config, vid_paths)
     vid_preds = predictor.generate_submission_file()
+    sub_data = []
+    for vid, preds in vid_preds.items():
+        vid_labs = find_labels(preds, vid)
+        sub_data += vid_labs
+    try: os.mkdir(os.path.join(os.getcwd(), 'event_outputs'))
+    except: pass
+    for vid in glob.glob(os.path.join(os.getcwd(), 'data', 'clips', '*.mp4')):
+        filtered_sub_data = [data for data in sub_data if data[0] == vid[vid.rfind("/")+1:-4]]
+        visualise_videos(vid, filtered_sub_data)
+    sub_df = pd.DataFrame(sub_data, columns=['video_id', 'time', 'event', 'score'])
+    sub_df.to_csv('submission.csv', index=False)

@@ -214,4 +214,4 @@ class DataLoader:
         self.dataset = CustomDataset(self.cfg, True, False, False, video_path)
 
         return torch.utils.data.DataLoader(dataset=self.dataset, batch_size=self.cfg.batch_size, shuffle=False,
-                                           num_workers=2)
+                                           num_workers=0)
