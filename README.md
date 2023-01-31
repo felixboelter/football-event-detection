@@ -6,6 +6,8 @@ We utilised the YoloX model for detecting the ball position in every frame, and 
 
 The project’s primary objective was to automate event annotation to scale the data collection process and gather data from previously unexplored competitions. The final model achieved good accuracy in detecting and classifying events. 
 
+The Kaggle competition and the data used can be found [here](https://www.kaggle.com/competitions/dfl-bundesliga-data-shootout/overview).
+
 # Results
 ![Football Events](https://github.com/felixboelter/football-event-detection/blob/main/data/event_output_gifs/538438_0_event.gif)
 
